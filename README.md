@@ -1,4 +1,4 @@
-# BullMQ TUI
+# BullMQ TUI (Just Use TUI as of Now, Web and App is not ready yet)
 
 A cross-platform terminal user interface for monitoring BullMQ queues, built in Rust.
 
