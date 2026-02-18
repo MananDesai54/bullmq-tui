@@ -1,0 +1,27 @@
+[package]
+name = "bullmq-tui-web"
+version.workspace = true
+edition = "2021"
+description = "WASM web BullMQ monitor TUI using Ratzilla"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+bullmq-core = { workspace = true, default-features = false, features = ["wasm"] }
+bullmq-tui-core = { workspace = true }
+# Use ratatui without crossterm for WASM - ratzilla provides the backend
+ratatui = { workspace = true }
+ratzilla = { workspace = true }
+wasm-bindgen = { workspace = true }
+wasm-bindgen-futures = { workspace = true }
+gloo-net = { workspace = true }
+gloo-timers = { workspace = true }
+web-sys = { workspace = true, features = ["console", "Window", "Location"] }
+js-sys = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+console_error_panic_hook = "0.1"
+futures-util = { workspace = true }
+futures-channel = "0.3"

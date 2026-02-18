@@ -1,0 +1,22 @@
+[package]
+name = "bullmq-core"
+version.workspace = true
+edition = "2021"
+description = "BullMQ Redis client library for Rust"
+
+[features]
+default = []
+wasm = []
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+chrono = { workspace = true }
+thiserror = { workspace = true }
+async-trait = { workspace = true }
+tracing = { workspace = true }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+redis = { workspace = true }
+deadpool-redis = { workspace = true }
+tokio = { workspace = true }

@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BullMQ Monitor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #1a1a2e;
+            --bg-secondary: #16213e;
+            --bg-tertiary: #0f3460;
+            --text-primary: #eaeaea;
+            --text-secondary: #a0a0a0;
+            --accent-blue: #4a9eff;
+            --accent-green: #4ade80;
+            --accent-yellow: #fbbf24;
+            --accent-red: #f87171;
+            --accent-cyan: #22d3ee;
+            --accent-magenta: #c084fc;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+            font-size: 14px;
+            overflow: hidden;
+        }
+
+        #app {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 16px;
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid var(--bg-tertiary);
+        }
+
+        .header h1 {
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .status-dot.connected { background-color: var(--accent-green); }
+        .status-dot.disconnected { background-color: var(--accent-red); }
+        .status-dot.connecting { background-color: var(--accent-yellow); }
+
+        /* Connection form */
+        .connection-form {
+            display: flex;
+            gap: 8px;
+            padding: 16px;
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid var(--bg-tertiary);
+        }
+
+        .connection-form input {
+            flex: 1;
+            padding: 8px 12px;
+            background-color: var(--bg-primary);
+            border: 1px solid var(--bg-tertiary);
+            border-radius: 4px;
+            color: var(--text-primary);
+            font-family: inherit;
+        }
+
+        .connection-form button {
+            padding: 8px 16px;
+            background-color: var(--accent-blue);
+            border: none;
+            border-radius: 4px;
+            color: white;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        .connection-form button:hover {
+            opacity: 0.9;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 4px;
+            padding: 8px 16px;
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid var(--bg-tertiary);
+            overflow-x: auto;
+        }
+
+        .tab {
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .tab.active {
+            background-color: var(--accent-blue);
+            color: white;
+        }
+
+        .tab:not(.active):hover {
+            background-color: var(--bg-tertiary);
+        }
+
+        .tab .count {
+            margin-left: 4px;
+            opacity: 0.8;
+        }
+
+        /* Main content */
+        .main {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 250px;
+            background-color: var(--bg-secondary);
+            border-right: 1px solid var(--bg-tertiary);
+            overflow-y: auto;
+        }
+
+        .sidebar-header {
+            padding: 12px 16px;
+            font-weight: bold;
+            border-bottom: 1px solid var(--bg-tertiary);
+        }
+
+        .queue-list {
+            list-style: none;
+        }
+
+        .queue-item {
+            padding: 10px 16px;
+            cursor: pointer;
+            border-bottom: 1px solid var(--bg-tertiary);
+        }
+
+        .queue-item:hover {
+            background-color: var(--bg-tertiary);
+        }
+
+        .queue-item.selected {
+            background-color: var(--accent-blue);
+        }
+
+        .queue-name {
+            font-weight: 500;
+        }
+
+        .queue-stats {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        /* Content area */
+        .content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Job table */
+        .job-table-container {
+            flex: 1;
+            overflow: auto;
+        }
+
+        .job-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .job-table th {
+            position: sticky;
+            top: 0;
+            background-color: var(--bg-secondary);
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--bg-tertiary);
+        }
+
+        .job-table td {
+            padding: 10px 16px;
+            border-bottom: 1px solid var(--bg-tertiary);
+        }
+
+        .job-table tr:hover {
+            background-color: var(--bg-secondary);
+        }
+
+        .job-table tr.selected {
+            background-color: var(--bg-tertiary);
+        }
+
+        /* Progress bar */
+        .progress-bar {
+            width: 80px;
+            height: 6px;
+            background-color: var(--bg-tertiary);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background-color: var(--accent-cyan);
+            transition: width 0.3s;
+        }
+
+        /* Footer */
+        .footer {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 16px;
+            background-color: var(--bg-secondary);
+            border-top: 1px solid var(--bg-tertiary);
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        /* Job detail panel */
+        .job-detail {
+            width: 400px;
+            background-color: var(--bg-secondary);
+            border-left: 1px solid var(--bg-tertiary);
+            overflow-y: auto;
+            padding: 16px;
+        }
+
+        .job-detail h3 {
+            margin-bottom: 16px;
+            color: var(--accent-cyan);
+        }
+
+        .job-detail-section {
+            margin-bottom: 16px;
+        }
+
+        .job-detail-section h4 {
+            color: var(--accent-yellow);
+            margin-bottom: 8px;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+
+        .job-detail pre {
+            background-color: var(--bg-primary);
+            padding: 12px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+
+        /* Actions */
+        .actions {
+            display: flex;
+            gap: 8px;
+            padding: 8px 16px;
+            background-color: var(--bg-secondary);
+            border-top: 1px solid var(--bg-tertiary);
+        }
+
+        .action-btn {
+            padding: 6px 12px;
+            border: 1px solid var(--bg-tertiary);
+            border-radius: 4px;
+            background-color: transparent;
+            color: var(--text-primary);
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 12px;
+        }
+
+        .action-btn:hover {
+            background-color: var(--bg-tertiary);
+        }
+
+        .action-btn.danger {
+            border-color: var(--accent-red);
+            color: var(--accent-red);
+        }
+
+        .action-btn.danger:hover {
+            background-color: var(--accent-red);
+            color: white;
+        }
+
+        /* Empty state */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-secondary);
+        }
+
+        .empty-state p {
+            margin-top: 8px;
+        }
+
+        /* Loading */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: var(--text-secondary);
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--bg-tertiary);
+            border-top-color: var(--accent-blue);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="header">
+            <h1>BullMQ Monitor</h1>
+            <div class="connection-status">
+                <span class="status-dot disconnected" id="status-dot"></span>
+                <span id="status-text">Disconnected</span>
+            </div>
+        </div>
+
+        <div class="connection-form" id="connection-form">
+            <input type="text" id="redis-url" placeholder="redis://localhost:6379" value="redis://localhost:6379">
+            <button onclick="connect()">Connect</button>
+        </div>
+
+        <div class="main">
+            <div class="sidebar">
+                <div class="sidebar-header">Queues</div>
+                <ul class="queue-list" id="queue-list">
+                    <li class="empty-state">
+                        <p>Connect to Redis to see queues</p>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="content">
+                <div class="tabs" id="tabs" style="display: none;">
+                    <div class="tab active" data-state="active">Active <span class="count">0</span></div>
+                    <div class="tab" data-state="waiting">Waiting <span class="count">0</span></div>
+                    <div class="tab" data-state="completed">Completed <span class="count">0</span></div>
+                    <div class="tab" data-state="failed">Failed <span class="count">0</span></div>
+                    <div class="tab" data-state="delayed">Delayed <span class="count">0</span></div>
+                </div>
+
+                <div class="job-table-container">
+                    <table class="job-table" id="job-table" style="display: none;">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Progress</th>
+                                <th>Attempts</th>
+                                <th>Created</th>
+                            </tr>
+                        </thead>
+                        <tbody id="job-tbody">
+                        </tbody>
+                    </table>
+                    <div class="empty-state" id="empty-state">
+                        <p>Select a queue to view jobs</p>
+                    </div>
+                </div>
+
+                <div class="actions" id="actions" style="display: none;">
+                    <button class="action-btn" onclick="refreshJobs()">Refresh</button>
+                    <button class="action-btn" onclick="retrySelected()">Retry</button>
+                    <button class="action-btn danger" onclick="removeSelected()">Remove</button>
+                </div>
+            </div>
+
+            <div class="job-detail" id="job-detail" style="display: none;">
+                <h3>Job Detail</h3>
+                <div id="job-detail-content"></div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <span id="status-message"></span>
+            <span>BullMQ Monitor v0.1.0</span>
+        </div>
+    </div>
+
+    <script>
+        const { invoke } = window.__TAURI__.core;
+
+        let currentQueue = null;
+        let currentState = 'active';
+        let currentJobs = [];
+        let selectedJobId = null;
+
+        // Connect to Redis
+        async function connect() {
+            const url = document.getElementById('redis-url').value;
+            try {
+                setStatus('Connecting...');
+                setConnectionStatus('connecting');
+                await invoke('connect', { url });
+                setConnectionStatus('connected');
+                setStatus('Connected to Redis');
+                loadQueues();
+            } catch (e) {
+                setConnectionStatus('disconnected');
+                setStatus('Connection failed: ' + e);
+            }
+        }
+
+        // Load queues
+        async function loadQueues() {
+            try {
+                const queues = await invoke('discover_queues');
+                renderQueues(queues);
+            } catch (e) {
+                setStatus('Failed to load queues: ' + e);
+            }
+        }
+
+        // Render queue list
+        function renderQueues(queues) {
+            const list = document.getElementById('queue-list');
+            if (queues.length === 0) {
+                list.innerHTML = '<li class="empty-state"><p>No queues found</p></li>';
+                return;
+            }
+
+            list.innerHTML = queues.map(q => `
+                <li class="queue-item" onclick="selectQueue('${q}')">
+                    <div class="queue-name">${q}</div>
+                    <div class="queue-stats" id="queue-stats-${q}">Loading...</div>
+                </li>
+            `).join('');
+
+            // Load stats for each queue
+            queues.forEach(loadQueueStats);
+        }
+
+        // Load queue stats
+        async function loadQueueStats(queue) {
+            try {
+                const info = await invoke('get_queue_info', { queue });
+                const el = document.getElementById('queue-stats-' + queue);
+                if (el) {
+                    el.textContent = `A:${info.counts.active} W:${info.counts.waiting} F:${info.counts.failed}`;
+                }
+            } catch (e) {
+                console.error('Failed to load queue stats:', e);
+            }
+        }
+
+        // Select queue
+        async function selectQueue(queue) {
+            currentQueue = queue;
+
+            // Update UI
+            document.querySelectorAll('.queue-item').forEach(el => {
+                el.classList.remove('selected');
+                if (el.querySelector('.queue-name').textContent === queue) {
+                    el.classList.add('selected');
+                }
+            });
+
+            document.getElementById('tabs').style.display = 'flex';
+            document.getElementById('job-table').style.display = 'table';
+            document.getElementById('empty-state').style.display = 'none';
+            document.getElementById('actions').style.display = 'flex';
+
+            loadCounts();
+            loadJobs();
+        }
+
+        // Load queue counts
+        async function loadCounts() {
+            if (!currentQueue) return;
+            try {
+                const counts = await invoke('get_queue_counts', { queue: currentQueue });
+                document.querySelectorAll('.tab').forEach(tab => {
+                    const state = tab.dataset.state;
+                    const count = counts[state] || counts[state + 'Children'] || 0;
+                    tab.querySelector('.count').textContent = count;
+                });
+            } catch (e) {
+                console.error('Failed to load counts:', e);
+            }
+        }
+
+        // Load jobs
+        async function loadJobs() {
+            if (!currentQueue) return;
+            try {
+                const jobs = await invoke('get_jobs', {
+                    queue: currentQueue,
+                    jobState: currentState,
+                    offset: 0,
+                    count: 50
+                });
+                currentJobs = jobs;
+                renderJobs(jobs);
+            } catch (e) {
+                setStatus('Failed to load jobs: ' + e);
+            }
+        }
+
+        // Render jobs
+        function renderJobs(jobs) {
+            const tbody = document.getElementById('job-tbody');
+            if (jobs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-secondary);">No jobs in this state</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = jobs.map(job => {
+                const progress = typeof job.progress === 'number' ? job.progress : 0;
+                const created = job.timestamp ? new Date(job.timestamp).toLocaleString() : '-';
+                return `
+                    <tr onclick="selectJob('${job.id}')" class="${selectedJobId === job.id ? 'selected' : ''}">
+                        <td>${job.id.substring(0, 12)}${job.id.length > 12 ? '...' : ''}</td>
+                        <td>${job.name}</td>
+                        <td>
+                            <div class="progress-bar">
+                                <div class="progress-bar-fill" style="width: ${progress}%"></div>
+                            </div>
+                        </td>
+                        <td>${job.attemptsMade}</td>
+                        <td>${created}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Select job
+        function selectJob(jobId) {
+            selectedJobId = jobId;
+            const job = currentJobs.find(j => j.id === jobId);
+            if (job) {
+                showJobDetail(job);
+            }
+            renderJobs(currentJobs);
+        }
+
+        // Show job detail
+        function showJobDetail(job) {
+            const panel = document.getElementById('job-detail');
+            const content = document.getElementById('job-detail-content');
+
+            panel.style.display = 'block';
+            content.innerHTML = `
+                <div class="job-detail-section">
+                    <h4>Info</h4>
+                    <p><strong>ID:</strong> ${job.id}</p>
+                    <p><strong>Name:</strong> ${job.name}</p>
+                    <p><strong>Attempts:</strong> ${job.attemptsMade}</p>
+                </div>
+                <div class="job-detail-section">
+                    <h4>Data</h4>
+                    <pre>${JSON.stringify(job.data, null, 2)}</pre>
+                </div>
+                ${job.failedReason ? `
+                <div class="job-detail-section">
+                    <h4>Error</h4>
+                    <pre style="color: var(--accent-red);">${job.failedReason}</pre>
+                </div>
+                ` : ''}
+                ${job.returnValue ? `
+                <div class="job-detail-section">
+                    <h4>Return Value</h4>
+                    <pre style="color: var(--accent-green);">${JSON.stringify(job.returnValue, null, 2)}</pre>
+                </div>
+                ` : ''}
+            `;
+        }
+
+        // Tab click handler
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                currentState = tab.dataset.state;
+                loadJobs();
+            });
+        });
+
+        // Refresh jobs
+        function refreshJobs() {
+            loadCounts();
+            loadJobs();
+        }
+
+        // Retry selected job
+        async function retrySelected() {
+            if (!selectedJobId || !currentQueue) return;
+            try {
+                await invoke('retry_job', { queue: currentQueue, jobId: selectedJobId });
+                setStatus('Job retried successfully');
+                refreshJobs();
+            } catch (e) {
+                setStatus('Failed to retry job: ' + e);
+            }
+        }
+
+        // Remove selected job
+        async function removeSelected() {
+            if (!selectedJobId || !currentQueue) return;
+            if (!confirm('Are you sure you want to remove this job?')) return;
+            try {
+                await invoke('remove_job', { queue: currentQueue, jobId: selectedJobId });
+                setStatus('Job removed successfully');
+                selectedJobId = null;
+                document.getElementById('job-detail').style.display = 'none';
+                refreshJobs();
+            } catch (e) {
+                setStatus('Failed to remove job: ' + e);
+            }
+        }
+
+        // Set status message
+        function setStatus(msg) {
+            document.getElementById('status-message').textContent = msg;
+        }
+
+        // Set connection status
+        function setConnectionStatus(status) {
+            const dot = document.getElementById('status-dot');
+            const text = document.getElementById('status-text');
+            dot.className = 'status-dot ' + status;
+            text.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'r' && !e.ctrlKey && !e.metaKey) {
+                refreshJobs();
+            }
+        });
+    </script>
+</body>
+</html>

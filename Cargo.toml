@@ -1,0 +1,65 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/bullmq-core",
+    "crates/bullmq-tui-core",
+    "crates/bullmq-tui-terminal",
+    "crates/bullmq-tui-web",
+    "proxy",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["CenterSeat"]
+license = "MIT"
+repository = "https://github.com/centerseat/bullmq-tui"
+
+[workspace.dependencies]
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+
+# Redis
+redis = { version = "0.27", features = ["tokio-comp", "aio"] }
+deadpool-redis = "0.18"
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Time
+chrono = { version = "0.4", features = ["serde"] }
+
+# Error handling
+thiserror = "2"
+anyhow = "1"
+
+# Async traits
+async-trait = "0.1"
+
+# TUI
+ratatui = { version = "0.29", default-features = false }
+crossterm = { version = "0.28", features = ["events"] }
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Web/WASM
+ratzilla = "0.1"
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+gloo-net = "0.6"
+gloo-timers = "0.3"
+web-sys = "0.3"
+js-sys = "0.3"
+
+# WebSocket proxy
+axum = { version = "0.7", features = ["ws"] }
+tokio-tungstenite = "0.24"
+tower-http = { version = "0.5", features = ["cors"] }
+futures-util = "0.3"
+
+# Internal crates
+bullmq-core = { path = "crates/bullmq-core", default-features = false }
+bullmq-tui-core = { path = "crates/bullmq-tui-core" }

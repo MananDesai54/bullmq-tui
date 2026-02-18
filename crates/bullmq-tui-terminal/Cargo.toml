@@ -1,0 +1,21 @@
+[package]
+name = "bullmq-tui-terminal"
+version.workspace = true
+edition = "2021"
+description = "Native terminal BullMQ monitor TUI"
+
+[[bin]]
+name = "bullmq-tui"
+path = "src/main.rs"
+
+[dependencies]
+bullmq-core = { workspace = true, default-features = true }
+bullmq-tui-core = { workspace = true, features = ["crossterm"] }
+ratatui = { workspace = true, features = ["crossterm"] }
+crossterm = { workspace = true, features = ["event-stream"] }
+tokio = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+clap = { version = "4", features = ["derive"] }
+futures-util = { workspace = true }
